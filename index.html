@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FT Check-in">
+<title>FT Check-in · Field Trip Attendance</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{--navy:#0b2545;--navy2:#1d4e89;--amber:#f59e0b;--ink:#1e293b;--muted:#64748b;--line:#e2e8f0;
+        --bg:#f1f5f9;--card:#fff;--green:#059669;--red:#dc2626;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+  header{background:linear-gradient(100deg,var(--navy),var(--navy2));color:#fff;padding:14px 16px calc(14px);
+         padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;}
+  header h1{font-size:17px;margin:0;font-weight:700;}
+  header p{margin:0;font-size:11.5px;opacity:.8;}
+  .net{margin-left:auto;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;background:rgba(255,255,255,.15);white-space:nowrap;}
+  .net.on{background:#10b981;} .net.off{background:#64748b;}
+  main{max-width:480px;margin:0 auto;padding:16px 16px 40px;}
+  .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 4px 16px rgba(15,37,69,.08);margin-bottom:14px;}
+  h2{font-size:15px;margin:0 0 10px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 5px;}
+  input{width:100%;font-size:16px;padding:12px;border:1.5px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);}
+  input:focus{outline:none;border-color:var(--navy2);}
+  .code{font-size:34px;letter-spacing:14px;text-align:center;font-weight:800;padding:12px 0 12px 14px;}
+  .btn{display:block;width:100%;border:0;border-radius:13px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:14px;}
+  .btn:disabled{opacity:.55;}
+  .primary{background:var(--green);color:#fff;font-size:18px;padding:18px;}
+  .navy{background:var(--navy2);color:#fff;}
+  .ghost{background:#e2e8f0;color:var(--ink);}
+  .chips{display:flex;gap:8px;}
+  .chip{flex:1;text-align:center;padding:10px 0;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  .chip.sel{border-color:var(--navy2);background:#e0ecff;color:var(--navy2);}
+  .hello{font-size:13px;color:var(--muted);margin-bottom:4px;}
+  .hello b{color:var(--ink);font-size:16px;}
+  .list{list-style:none;margin:0;padding:0;}
+  .list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .list li:last-child{border-bottom:0;}
+  .tag{margin-left:auto;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;}
+  .tag.p{background:#fef3c7;color:#92400e;} .tag.s{background:#dcfce7;color:#166534;}
+  .muted{color:var(--muted);font-size:12px;}
+  .msg{border-radius:11px;padding:11px 12px;font-size:13.5px;margin-top:12px;display:none;}
+  .msg.ok{display:block;background:#dcfce7;color:#166534;} .msg.err{display:block;background:#fee2e2;color:#b91c1c;}
+  .row{display:flex;gap:10px;} .row .btn{margin-top:10px;}
+  .link{background:none;border:0;color:var(--navy2);font-size:13px;font-weight:600;padding:6px 0;cursor:pointer;}
+  .hidden{display:none;}
+  .badge{display:inline-block;min-width:22px;padding:2px 7px;border-radius:99px;background:var(--amber);color:#fff;font-size:12px;margin-left:6px;}
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:10px 16px 24px;}
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:26px;">🚌</div>
+  <div><h1>FT Check-in</h1><p>Dept. of Geography · University of Madras</p></div>
+  <span class="net" id="net">…</span>
+</header>
+
+<main>
+  <!-- ============ First-time setup ============ -->
+  <section id="setup" class="card hidden">
+    <h2>👋 Set up once</h2>
+    <div class="muted">Use the same mobile number you gave for the field trip registration — that is how the portal knows it's you.</div>
+    <label>Your full name</label>
+    <input id="s-name" autocomplete="name" placeholder="e.g. Priya R">
+    <label>Your mobile number (10 digits)</label>
+    <input id="s-phone" inputmode="numeric" maxlength="14" placeholder="98xxxxxxxx">
+    <label>Coordinator's WhatsApp number <span style="font-weight:400">(optional)</span></label>
+    <input id="s-wa" inputmode="numeric" maxlength="15" placeholder="e.g. 9198xxxxxxxx">
+    <div class="msg" id="s-msg"></div>
+    <button class="btn navy" onclick="saveProfile()">Save</button>
+  </section>
+
+  <!-- ============ Main ============ -->
+  <section id="home" class="hidden">
+    <div class="card">
+      <div class="hello">Signed in as<br><b id="h-name"></b> <span class="muted" id="h-phone"></span></div>
+      <label>Check-in code (announced by your coordinator)</label>
+      <input id="c-code" class="code" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      <label>I am boarding the</label>
+      <div class="chips" id="modes">
+        <div class="chip sel" data-m="Bus">🚌 Bus</div>
+        <div class="chip" data-m="Train">🚆 Train</div>
+        <div class="chip" data-m="Other">📍 Other</div>
+      </div>
+      <button class="btn primary" id="c-go" onclick="checkIn()">✅ I'm on board</button>
+      <div class="msg" id="c-msg"></div>
+      <div class="muted" style="margin-top:10px;">Works without internet. Your time and location are saved on this phone.</div>
+    </div>
+
+    <div class="card">
+      <h2>📤 Send to coordinator <span class="badge" id="pend-n">0</span></h2>
+      <div class="muted" id="send-hint">When you have signal, send your saved check-ins on WhatsApp.</div>
+      <button class="btn navy" id="send-btn" onclick="sendPending()">Send via WhatsApp</button>
+      <div class="row">
+        <button class="btn ghost" onclick="copyPending()">📋 Copy</button>
+        <button class="btn ghost" onclick="markSent()">✔ Mark as sent</button>
+      </div>
+      <div class="msg" id="s2-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>🗂 My check-ins</h2>
+      <ul class="list" id="hist"></ul>
+      <button class="link" onclick="resendAll()">↻ Send all again</button>
+    </div>
+
+    <div style="text-align:center;"><button class="link" onclick="editProfile()">✎ Change my details</button></div>
+  </section>
+</main>
+<footer>Field Trip Portal · Designed &amp; Developed by Packiarajan Siva — M.Tech Geoinformatics, II Year</footer>
+
+<script>
+/* ---------------- storage (phone only) ---------------- */
+const K_PROF = 'ftc_profile', K_LOG = 'ftc_log';
+function load(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+const $ = id => document.getElementById(id);
+const digits = s => String(s||'').replace(/\D/g,'');
+const clean  = s => String(s||'').replace(/[|\r\n#]/g,' ').replace(/\s+/g,' ').trim();
+
+/* Same checksum as the portal's attendance importer (catches typos / edits) */
+function ftHash(s){ let x = 5381; for (let i=0;i<s.length;i++) x = (Math.imul(x,33) ^ s.charCodeAt(i)) >>> 0;
+                    return x.toString(36).toUpperCase().padStart(4,'0').slice(-4); }
+function lineFor(r){ const body = ['#FTATT','v1',r.code,r.phone,r.at,r.lat||'',r.lon||'',r.mode,r.name].join('|');
+                     return body + '|' + ftHash(body); }
+
+/* ---------------- profile ---------------- */
+function showMsg(id, text, kind){ const m=$(id); m.textContent=text; m.className='msg '+kind; }
+function saveProfile(){
+  const name = clean($('s-name').value), ph = digits($('s-phone').value).slice(-10), wa = digits($('s-wa').value);
+  if (name.length < 2) return showMsg('s-msg','Please enter your name.','err');
+  if (ph.length !== 10) return showMsg('s-msg','Enter your 10-digit mobile number.','err');
+  save(K_PROF, {name, phone: ph, wa});
+  render();
+}
+function editProfile(){
+  const p = load(K_PROF, {});
+  $('s-name').value = p.name||''; $('s-phone').value = p.phone||''; $('s-wa').value = p.wa||'';
+  $('setup').classList.remove('hidden'); $('home').classList.add('hidden');
+}
+
+/* ---------------- check-in ---------------- */
+let mode = 'Bus';
+document.querySelectorAll('#modes .chip').forEach(c => c.onclick = () => {
+  document.querySelectorAll('#modes .chip').forEach(x=>x.classList.remove('sel')); c.classList.add('sel'); mode = c.dataset.m; });
+
+function getPos(){
+  return new Promise(res => {
+    if (!navigator.geolocation) return res(null);
+    navigator.geolocation.getCurrentPosition(p => res(p.coords), () => res(null),
+      {enableHighAccuracy:true, timeout:10000, maximumAge:120000});
+  });
+}
+async function checkIn(){
+  const code = digits($('c-code').value);
+  if (code.length !== 4) return showMsg('c-msg','Enter the 4-digit code your coordinator announced.','err');
+  const p = load(K_PROF, null); if (!p) return render();
+  const log = load(K_LOG, []);
+  if (log.some(r => r.code === code)) return showMsg('c-msg','You have already checked in with code '+code+'.','err');
+  const btn = $('c-go'); btn.disabled = true; btn.textContent = '📍 Getting location…';
+  const pos = await getPos();
+  const r = { code, phone:p.phone, name:p.name, mode,
+              at: new Date().toISOString().slice(0,16)+'Z',
+              lat: pos ? pos.latitude.toFixed(5) : '', lon: pos ? pos.longitude.toFixed(5) : '', sent:false };
+  log.unshift(r);
+  if (!save(K_LOG, log)) { btn.disabled=false; btn.textContent="✅ I'm on board"; return showMsg('c-msg','Could not save on this phone (private/incognito mode?).','err'); }
+  btn.disabled = false; btn.textContent = "✅ I'm on board";
+  $('c-code').value = '';
+  showMsg('c-msg', '✔ Checked in at ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) +
+          (pos ? '' : ' (no GPS fix — that is OK)') + '. Remember to send it when you have signal.', 'ok');
+  if (navigator.vibrate) navigator.vibrate(80);
+  render(true);
+}
+
+/* ---------------- send / sync ---------------- */
+function pendingText(all){
+  const p = load(K_PROF,{}), rows = load(K_LOG,[]).filter(r => all || !r.sent);
+  if (!rows.length) return '';
+  return 'Field Trip check-in — ' + p.name + '\n' + rows.slice().reverse().map(lineFor).join('\n');
+}
+function markSent(silent){
+  const log = load(K_LOG,[]); log.forEach(r => r.sent = true); save(K_LOG, log);
+  if (!silent) showMsg('s2-msg','Marked as sent.','ok'); render(true);
+}
+async function share(text){
+  if (!text) return showMsg('s2-msg','Nothing new to send.','ok');
+  const p = load(K_PROF,{});
+  if (!p.wa && navigator.share) {
+    try { await navigator.share({ text }); markSent(true); return showMsg('s2-msg','Shared ✔','ok'); }
+    catch(e){ if (e && e.name === 'AbortError') return; }
+  }
+  const url = (p.wa ? 'https://wa.me/' + p.wa : 'https://wa.me/') + '?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+  showMsg('s2-msg','WhatsApp opened. After you send the message, tap “Mark as sent”.','ok');
+}
+function sendPending(){ share(pendingText(false)); }
+function resendAll(){ share(pendingText(true)); }
+async function copyPending(){
+  const t = pendingText(false) || pendingText(true);
+  if (!t) return showMsg('s2-msg','Nothing to copy yet.','ok');
+  try { await navigator.clipboard.writeText(t); showMsg('s2-msg','Copied. Paste it into WhatsApp / SMS to your coordinator.','ok'); }
+  catch(e){ prompt('Copy this text:', t); }
+}
+
+/* ---------------- render ---------------- */
+function render(keepMsg){
+  const p = load(K_PROF, null);
+  $('setup').classList.toggle('hidden', !!p); $('home').classList.toggle('hidden', !p);
+  if (!p) {
+    const wa = new URLSearchParams(location.search).get('wa'); if (wa) $('s-wa').value = digits(wa);
+    return;
+  }
+  $('h-name').textContent = p.name; $('h-phone').textContent = '· ' + p.phone;
+  const log = load(K_LOG, []), pend = log.filter(r=>!r.sent).length;
+  $('pend-n').textContent = pend; $('pend-n').style.background = pend ? '#f59e0b' : '#10b981';
+  $('send-btn').disabled = !pend;
+  $('hist').innerHTML = log.length ? log.map(r => {
+    const d = new Date(r.at);
+    const icon = r.mode === 'Train' ? '🚆' : (r.mode === 'Bus' ? '🚌' : '📍');
+    return `<li><span style="font-size:20px">${icon}</span><div><b>Code ${r.code}</b><br>
+      <span class="muted">${d.toLocaleDateString([], {day:'2-digit',month:'short'})} · ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${r.lat?' · 📍':''}</span></div>
+      <span class="tag ${r.sent?'s':'p'}">${r.sent?'Sent':'Not sent'}</span></li>`;
+  }).join('') : '<li class="muted">No check-ins yet.</li>';
+  if (!keepMsg) ['c-msg','s2-msg'].forEach(id => $(id).className = 'msg');
+}
+function net(){ const on = navigator.onLine; $('net').textContent = on ? '● Online' : '● Offline'; $('net').className = 'net ' + (on?'on':'off'); }
+addEventListener('online', net); addEventListener('offline', net); net();
+$('c-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkIn(); });
+render();
+
+/* Offline support (needs https:// or localhost) */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
